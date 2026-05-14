@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+.DS_Store?
+Thumbs.db
+desktop.ini
+*~
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+/build/
+/dist/
+/_site/
+
+# Large binary files (commit STLs intentionally, not accidentally)
+# Uncomment if you want to block accidental large uploads:
+# *.stl
+# *.step
+
+# Data files — commit intentionally
+# Raw data should be committed, processed outputs optional
+/data/**/*_processed.*
+/data/**/*.png
+/data/**/*.pdf
+
+# Website build output
+/website/_site/
+/website/node_modules/
+
+# Temporary
+*.tmp
+*.log
+*.bak
