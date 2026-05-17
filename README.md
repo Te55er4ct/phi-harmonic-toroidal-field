@@ -226,6 +226,7 @@ All structural components are 3D-printed in PETG from parametrically generated S
 | May 2026 | Parametric geometry and Java STL generator complete |
 | May 2026 | Driver circuit specification complete |
 | May 2026 | Repository established — public priority record |
+| May 2026 | Documentation complete. Awaiting first print. |
 | TBD | Prototype fabrication |
 | TBD | Phase 1 electromagnetic characterisation |
 | TBD | Phase 2 field distribution mapping |
