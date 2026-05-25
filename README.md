@@ -227,7 +227,11 @@ All structural components are 3D-printed in PETG from parametrically generated S
 | May 2026 | Driver circuit specification complete |
 | May 2026 | Repository established — public priority record |
 | May 2026 | Documentation complete. Awaiting first print. |
-| TBD | Prototype fabrication |
+| May 23, 2026 | First segment printed — V1 control |
+| May 23, 2026 | OpenSCAD geometry validated — slits, pegs, sockets |
+| May 23, 2026 | Bambu Lab A1 Mini operational |
+| May 24, 2026 | Toroidal segment peg/socket alignment validated procedurally |
+| May 24, 2026 | 45° segmented toroid architecture finalized for V1 testing 
 | TBD | Phase 1 electromagnetic characterisation |
 | TBD | Phase 2 field distribution mapping |
 | TBD | Phase 3 scalar component investigation |
