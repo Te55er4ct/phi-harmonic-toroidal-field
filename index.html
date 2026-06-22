@@ -560,7 +560,6 @@
       );
     }
 
-    // ── REMAINING SECTIONS (simplified) ──────────────────────────
     function SimpleSection({id,chapter,title,children}) {
       return (
         <section id={id} style={sectionStyle}>
@@ -571,27 +570,206 @@
       );
     }
 
+    // ── CYMATICS ─────────────────────────────────────────────────
+    const CYMATICS_NODES = SYNTH_NODES.map((n,i)=>({
+      ...n,
+      symmetry: [3,5,8,5,13,8,5,3][i],
+      label: ["3-fold","5-fold","8-fold","5-fold","13-fold","8-fold","5-fold","3-fold"][i],
+      desc: ["Triadic balance · triangle · stability","Pentagonal symmetry · life · growth","Octave structure · doubling · resonance","Pentagonal return · phi recursion","Fibonacci crown · maximum complexity","Octave harmonic · field reinforcement","Pentagonal echo · phi mirror","Triadic close · field completion"][i],
+    }));
+
     function CymaticsSection() {
+      const canvasRef = useRef(null);
+      const sectionRef = useRef(null);
+      const visRef = useVisible(sectionRef);
+      const [selected, setSelected] = useState(0);
+      const selRef = useRef(0);
+
+      useEffect(() => { selRef.current = selected; }, [selected]);
+
+      useEffect(() => {
+        const canvas = canvasRef.current; if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width, H = canvas.height;
+        const cx = W/2, cy = H/2;
+        let frame, t = 0;
+        const draw = () => {
+          frame = requestAnimationFrame(draw);
+          if (!visRef.current) return;
+          t += 0.018;
+          ctx.fillStyle = "rgba(2,8,16,0.25)"; ctx.fillRect(0, 0, W, H);
+          const node = CYMATICS_NODES[selRef.current];
+          const sym = node.symmetry;
+          const freq = node.freq;
+          const R = Math.min(W,H)*0.38;
+          // Draw Chladni-like standing wave pattern
+          const id = ctx.getImageData(0, 0, W, H);
+          const d = id.data;
+          for (let py = 0; py < H; py += 2) {
+            for (let px = 0; px < W; px += 2) {
+              const dx = px - cx, dy = py - cy;
+              const r = Math.sqrt(dx*dx + dy*dy);
+              const a = Math.atan2(dy, dx);
+              if (r > R * 1.05) continue;
+              const radial = Math.sin(r / R * Math.PI * (sym/2) - t * 0.5);
+              const angular = Math.cos(sym * a + t * 0.3);
+              const amp = radial * angular;
+              const node_line = Math.abs(amp) < 0.12;
+              const brightness = node_line ? 0.9 : Math.abs(amp) * 0.4;
+              const off = (py * W + px) * 4;
+              if (node_line) {
+                d[off]   = 255; d[off+1] = 215; d[off+2] = 0; d[off+3] = 180;
+                if (px+1 < W) { const o2 = off+4; d[o2]=255;d[o2+1]=215;d[o2+2]=0;d[o2+3]=180; }
+                if (py+1 < H) { const o3 = ((py+1)*W+px)*4; d[o3]=255;d[o3+1]=215;d[o3+2]=0;d[o3+3]=180; }
+              } else if (amp > 0) {
+                d[off]   = 0|( 0 + brightness*40);
+                d[off+1] = 0|(150 + brightness*60);
+                d[off+2] = 0|(200 + brightness*55);
+                d[off+3] = 0|(brightness * 160);
+              } else {
+                d[off]   = 0|(180 + brightness*60);
+                d[off+1] = 0|( 80 + brightness*40);
+                d[off+2] = 0;
+                d[off+3] = 0|(brightness * 160);
+              }
+            }
+          }
+          ctx.putImageData(id, 0, 0);
+          // Outer ring
+          ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU);
+          ctx.strokeStyle = "rgba(184,134,11,0.25)"; ctx.lineWidth = 1; ctx.stroke();
+          // Symmetry markers
+          for (let i = 0; i < sym; i++) {
+            const a = (i / sym) * TAU - Math.PI/2;
+            const mx = cx + R * Math.cos(a), my = cy + R * Math.sin(a);
+            ctx.beginPath(); ctx.arc(mx, my, 3, 0, TAU);
+            ctx.fillStyle = "rgba(255,215,0,0.7)"; ctx.fill();
+          }
+          // Centre
+          ctx.beginPath(); ctx.arc(cx, cy, 4, 0, TAU);
+          ctx.fillStyle = `rgba(255,215,0,${0.5 + 0.5*Math.sin(t*PHI)})`; ctx.fill();
+          // Freq label
+          ctx.font = "11px monospace"; ctx.fillStyle = "rgba(184,134,11,0.7)";
+          ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+          ctx.fillText(`${Math.round(freq)} Hz · ${node.label}`, cx, H - 8);
+        };
+        draw();
+        return () => cancelAnimationFrame(frame);
+      }, []);
+
       return (
-        <SimpleSection id="cymatics" chapter="Chapter VII" title="Cymatics · Frequency as Form">
-          <p style={bodyText}>Hans Jenny demonstrated that specific frequencies produce reproducible geometric standing-wave patterns in physical media. The phi-harmonic node frequency series (111 × φ^(n/3) Hz) predicts Fibonacci symmetry orders — 3-fold, 5-fold, 8-fold, 13-fold — at successive node positions around the torus equator.</p>
-          <p style={bodyText}>These are not decorative patterns. They are the geometric signature of the field organising matter in response to phi-harmonic frequency input. The same geometry appears in snowflakes, crystal lattices, and biological tissue.</p>
-        </SimpleSection>
+        <section id="cymatics" ref={sectionRef} style={sectionStyle}>
+          <div style={chapterLabel}>Chapter VII</div>
+          <h2 style={h2Style}>Cymatics · Frequency as Form</h2>
+          <p style={{...bodyText, textAlign:"center", maxWidth:580, marginBottom:28}}>Hans Jenny demonstrated that specific frequencies produce reproducible geometric standing-wave patterns in physical media. Select a phi-harmonic node to see its cymatic symmetry signature.</p>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:24,width:"100%"}}>
+            <canvas ref={canvasRef} width={400} height={400} style={{width:"min(400px,86vw)",height:"min(400px,86vw)",borderRadius:"50%",border:"1px solid rgba(184,134,11,0.15)"}} />
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",maxWidth:500}}>
+              {CYMATICS_NODES.map((n,i)=>(
+                <button key={i} onClick={()=>setSelected(i)} style={{
+                  background: selected===i ? "rgba(255,215,0,0.1)" : "rgba(255,255,255,0.02)",
+                  border: `1px solid ${selected===i ? "rgba(255,215,0,0.6)" : "rgba(255,255,255,0.06)"}`,
+                  color: selected===i ? "#ffd700" : "#3a4455",
+                  padding:"5px 10px", fontSize:10, letterSpacing:"0.08em",
+                  cursor:"pointer", borderRadius:2, fontFamily:"monospace",
+                }}>
+                  {Math.round(n.freq)} Hz
+                </button>
+              ))}
+            </div>
+            <div style={{maxWidth:520, textAlign:"center", minHeight:60}}>
+              <div style={{color:C.gold, fontSize:13, letterSpacing:"0.2em", marginBottom:8}}>
+                {CYMATICS_NODES[selected].label} · Node {selected + 1}
+              </div>
+              <p style={{...bodyText, margin:0}}>{CYMATICS_NODES[selected].desc}</p>
+            </div>
+            <p style={{...bodyText, textAlign:"center", maxWidth:580, opacity:0.75}}>These are not decorative patterns. They are the geometric signature of the field organising matter in response to phi-harmonic frequency input. The same geometry appears in snowflakes, crystal lattices, and biological tissue.</p>
+          </div>
+        </section>
       );
     }
 
+    // ── HERMETIC ─────────────────────────────────────────────────
+    const HERMETIC_DATA = [
+      {
+        name: "Mentalism",
+        axiom: "The All is Mind. The Universe is Mental.",
+        torus: "The field does not exist independently of the observer. The device is a materialised intention — the mind of the builder encoded in copper and ferrite. The phi-proportioned geometry is the structural expression of the thought: coherence.",
+        symbol: "∞",
+      },
+      {
+        name: "Correspondence",
+        axiom: "As above, so below. As within, so without.",
+        torus: "The phi-torus appears at every scale: galactic filaments, planetary magnetospheres, the heart's EM field, the cell membrane. The device at bench scale instantiates the same geometry as the cosmos. Measurement here is measurement everywhere.",
+        symbol: "⟷",
+      },
+      {
+        name: "Vibration",
+        axiom: "Nothing rests. Everything moves. Everything vibrates.",
+        torus: "The eight phi-harmonic nodes each resonate at 111 × φ^(n/3) Hz. Because φ is irrational, the beating between tones never repeats — infinite non-repeating vibration within a finite structure. The device is a vibration machine.",
+        symbol: "∿",
+      },
+      {
+        name: "Polarity",
+        axiom: "Everything is dual. Opposites are identical in nature, different in degree.",
+        torus: "The primary winding advances clockwise. The counter winding advances counterclockwise. They are the same wire, the same current, the same field — differing only in direction. The torus holds both poles simultaneously.",
+        symbol: "⊕",
+      },
+      {
+        name: "Rhythm",
+        axiom: "Everything flows, out and in. The pendulum swing manifests in everything.",
+        torus: "Energy enters through one pole of the 9-axis, flows outward through the toroidal surface, returns inward through the other pole. The rhythm is the torus itself: perpetual inflow and outflow, the breath of the field.",
+        symbol: "⟳",
+      },
+      {
+        name: "Cause & Effect",
+        axiom: "Every cause has its effect. Every effect has its cause.",
+        torus: "The phi-proportioned geometry is not decorative — it is causal. R/r = φ produces specific resonant frequencies. Those frequencies produce specific cymatic patterns. Those patterns appear identically in biology, crystallography, and cosmology. Geometry is cause.",
+        symbol: "→",
+      },
+      {
+        name: "Gender",
+        axiom: "Gender is in everything. Everything has its masculine and feminine principles.",
+        torus: "The 3 and the 6 — primary and counter windings — are the masculine and feminine of the field. Neither can exist without the other. Their interaction generates the 9-axis: the still point that is neither, and both. The axis is the child of their union.",
+        symbol: "☯",
+      },
+    ];
+
     function HermeticSection() {
-      const principles = ["Mentalism","Correspondence","Vibration","Polarity","Rhythm","Cause & Effect","Gender"];
+      const [selected, setSelected] = useState(null);
+      const active = selected !== null ? HERMETIC_DATA[selected] : null;
       return (
-        <SimpleSection id="hermetic" chapter="Chapter VIII" title="The Hermetic Principles">
-          <p style={bodyText}>The seven Hermetic principles, encoded in the Kybalion, describe the operating system of the universe. The phi-torus instantiates all seven simultaneously.</p>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginTop:16}}>
-            {principles.map(p=>(
-              <div key={p} style={{padding:"6px 14px",border:"1px solid rgba(184,134,11,0.2)",borderRadius:2,color:C.amber,fontSize:11,letterSpacing:"0.1em"}}>{p}</div>
+        <section id="hermetic" style={sectionStyle}>
+          <div style={chapterLabel}>Chapter VIII</div>
+          <h2 style={h2Style}>The Hermetic Principles</h2>
+          <p style={{...bodyText, textAlign:"center", maxWidth:580, marginBottom:32}}>The seven Hermetic principles, encoded in the Kybalion, describe the operating system of the universe. The phi-torus instantiates all seven simultaneously. Select each to see the correlation.</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center",maxWidth:600,marginBottom:32}}>
+            {HERMETIC_DATA.map((p,i)=>(
+              <button key={i} onClick={()=>setSelected(selected===i?null:i)} style={{
+                background: selected===i ? "rgba(184,134,11,0.15)" : "rgba(255,255,255,0.025)",
+                border: `1px solid ${selected===i ? "rgba(184,134,11,0.7)" : "rgba(184,134,11,0.2)"}`,
+                color: selected===i ? C.gold : C.amber,
+                padding:"8px 18px", fontSize:11, letterSpacing:"0.12em",
+                cursor:"pointer", borderRadius:2, fontFamily:"Georgia, serif",
+                transition:"all 0.2s",
+              }}>
+                {p.name}
+              </button>
             ))}
           </div>
-          <p style={{...bodyText,marginTop:24}}>Vibration is primary. Everything moves. Everything vibrates. The phi-torus is a vibration machine, structured so that each frequency reinforces rather than cancels every other.</p>
-        </SimpleSection>
+          {active && (
+            <div style={{maxWidth:620,textAlign:"center",border:"1px solid rgba(184,134,11,0.2)",borderRadius:2,padding:"32px 28px",background:"rgba(184,134,11,0.04)"}}>
+              <div style={{fontSize:32, color:C.gold, marginBottom:16, opacity:0.6}}>{active.symbol}</div>
+              <div style={{color:C.gold, fontSize:12, letterSpacing:"0.25em", textTransform:"uppercase", marginBottom:14}}>{active.name}</div>
+              <p style={{...bodyText, fontStyle:"italic", color:C.amber, margin:"0 auto 20px"}}>"{active.axiom}"</p>
+              <div style={{width:40, height:1, background:"rgba(184,134,11,0.3)", margin:"0 auto 20px"}} />
+              <p style={{...bodyText, margin:"0 auto"}}>{active.torus}</p>
+            </div>
+          )}
+          {selected === null && (
+            <p style={{...bodyText, textAlign:"center", opacity:0.5, fontStyle:"italic"}}>Select a principle above</p>
+          )}
+        </section>
       );
     }
 
