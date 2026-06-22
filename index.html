@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Phi-Harmonic Toroidal Field · Wierzbicki 2026</title>
+  <meta name="description" content="The Wierzbicki Phenomenon Omnivortex Device — phi-scaled resonant toroidal research platform" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #020810; color: #a09080; font-family: Georgia, serif; }
+    #root { width: 100%; }
+    .torus-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; max-width: 1100px; align-items: center; width: 100%; }
+    @media (max-width: 760px) {
+      .torus-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+      .phi-nav { display: none !important; }
+    }
+    @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.9; } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Dependencies from CDN -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useRef } = React;
+    const THREE = window.THREE;
+    const Tone  = window.Tone;
+
+    const PHI = (1 + Math.sqrt(5)) / 2;
+    const GA  = Math.PI * (3 - Math.sqrt(5));
+    const TAU = Math.PI * 2;
+
+    const C = {
+      bg:    "#020810", bg2:   "#050d18",
+      gold:  "#ffd700", amber: "#b8860b",
+      dim:   "#3a4455", faint: "#1e2c3a",
+      teal:  "#00ffe0", ambr:  "#ffaa00",
+      violet:"#aa44ff", body:  "#a09080",
+      text:  "#b0a898",
+    };
+
+    const SECTIONS = [
+      { id: "hero",        label: "Open"            },
+      { id: "ratio",       label: "I · Ratio"       },
+      { id: "torus",       label: "II · Torus"      },
+      { id: "windings",    label: "III · Windings"  },
+      { id: "axis",        label: "IV · 9-Axis"     },
+      { id: "wave",        label: "V · Standing Wave"},
+      { id: "sound",       label: "VI · Sound"      },
+      { id: "cymatics",    label: "VII · Cymatics"  },
+      { id: "hermetic",    label: "VIII · Hermetic" },
+      { id: "schauberger", label: "IX · Schauberger"},
+      { id: "biology",     label: "X · Biology"     },
+      { id: "russell",     label: "XI · Russell"    },
+      { id: "blueprint",   label: "XII · Blueprint" },
+      { id: "close",       label: "XIII · Convergence"},
+    ];
+
+    function useVisible(ref, threshold = 0.15) {
+      const visRef = useRef(false);
+      useEffect(() => {
+        if (!ref.current) return;
+        const obs = new IntersectionObserver(
+          ([e]) => { visRef.current = e.isIntersecting; },
+          { threshold }
+        );
+        obs.observe(ref.current);
+        return () => obs.disconnect();
+      }, []);
+      return visRef;
+    }
+
+    function dragRotate(mount, group) {
+      let on = false, lx = 0, ly = 0;
+      const d = e => { on = true; lx = e.clientX; ly = e.clientY; };
+      const u = ()  => { on = false; };
+      const m = e  => {
+        if (!on) return;
+        group.rotation.y += (e.clientX - lx) * 0.005;
+        group.rotation.x += (e.clientY - ly) * 0.005;
+        lx = e.clientX; ly = e.clientY;
+      };
+      mount.addEventListener("mousedown", d);
+      window.addEventListener("mouseup", u);
+      window.addEventListener("mousemove", m);
+      return () => {
+        mount.removeEventListener("mousedown", d);
+        window.removeEventListener("mouseup", u);
+        window.removeEventListener("mousemove", m);
+      };
+    }
+
+    function mkRenderer(mount) {
+      const W = mount.clientWidth, H = mount.clientHeight;
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      r.setSize(W, H);
+      r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      r.setClearColor(0x000000, 0);
+      mount.appendChild(r.domElement);
+      return { renderer: r, W, H };
+    }
+
+    const sectionStyle = {
+      minHeight: "100vh", width: "100%",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      padding: "80px 24px", position: "relative",
+      scrollSnapAlign: "start",
+    };
+    const chapterLabel = {
+      color: C.amber, fontSize: 10, letterSpacing: "0.42em",
+      textTransform: "uppercase", marginBottom: 18,
+    };
+    const h2Style = {
+      color: C.gold, fontSize: "clamp(28px, 4vw, 44px)",
+      fontWeight: 300, letterSpacing: "0.04em",
+      margin: "0 0 32px", textAlign: "center",
+      fontFamily: "Georgia, serif",
+    };
+    const bodyText = {
+      color: C.body, fontSize: 15.5, lineHeight: 1.85,
+      fontFamily: "Georgia, serif", maxWidth: 620,
+      margin: "0 auto 16px",
+    };
+
+    // ── HERO ─────────────────────────────────────────────────────
+    function HeroSection() {
+      const mountRef = useRef(null);
+      const visRef = useVisible(mountRef);
+      useEffect(() => {
+        const mount = mountRef.current; if (!mount) return;
+        const { renderer, W, H } = mkRenderer(mount);
+        const scene = new THREE.Scene();
+        const cam = new THREE.PerspectiveCamera(45, W / H, 0.1, 200);
+        cam.position.set(0, 1.5, 12); cam.lookAt(0, 0, 0);
+        scene.add(new THREE.AmbientLight(0x223344, 1.8));
+        const pl1 = new THREE.PointLight(0xffd080, 2.5, 40);
+        pl1.position.set(6, 6, 6); scene.add(pl1);
+        const pivot = new THREE.Group(); pivot.rotation.x = 0.35; scene.add(pivot);
+        const R = 3.2, rm = R / PHI;
+        pivot.add(new THREE.Mesh(
+          new THREE.TorusGeometry(R, rm, 22, 80),
+          new THREE.MeshBasicMaterial({ color: 0xb8860b, wireframe: true, transparent: true, opacity: 0.14 })
+        ));
+        const cols = [0x00ffe0, 0xffaa00, 0xaa44ff];
+        const dirs = [1, -1, PHI];
+        const offs = [0, TAU/3, GA];
+        cols.forEach((color, ci) => {
+          const pts = [];
+          for (let i = 0; i <= 600; i++) {
+            const t = i / 600, th = t * TAU * 5;
+            const ph = dirs[ci] * t * TAU * 5 / PHI + offs[ci];
+            const rr = rm * 0.78;
+            pts.push(new THREE.Vector3(
+              (R + rr * Math.cos(ph)) * Math.cos(th),
+              (R + rr * Math.cos(ph)) * Math.sin(th),
+              rr * Math.sin(ph)
+            ));
+          }
+          pivot.add(new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(pts),
+            new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.55 })
+          ));
+        });
+        const nodeMats = [];
+        for (let i = 0; i < 8; i++) {
+          const a = i * GA;
+          const s = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 14, 14),
+            new THREE.MeshPhongMaterial({ color: 0xffd700, emissive: 0xff8800, emissiveIntensity: 2 })
+          );
+          s.position.set(R * Math.cos(a), R * Math.sin(a), 0);
+          pivot.add(s); nodeMats.push({ mat: s.material, phase: i });
+        }
+        let frame, t = 0;
+        const loop = () => {
+          frame = requestAnimationFrame(loop);
+          if (!visRef.current) return;
+          t += 0.014; pivot.rotation.y += 0.003;
+          nodeMats.forEach(({ mat, phase }) => { mat.emissiveIntensity = 1.4 + 1.6 * Math.sin(t * PHI + phase); });
+          renderer.render(scene, cam);
+        };
+        loop();
+        return () => { cancelAnimationFrame(frame); renderer.dispose(); if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement); };
+      }, []);
+
+      return (
+        <section id="hero" style={{ ...sectionStyle, padding: 0 }}>
+          <div ref={mountRef} style={{ position: "absolute", inset: 0 }} />
+          <div style={{ position: "relative", textAlign: "center", padding: "0 20px", pointerEvents: "none",
+            background: "radial-gradient(ellipse at center, rgba(2,8,16,0.6) 0%, rgba(2,8,16,0) 70%)" }}>
+            <div style={{ color: C.amber, fontSize: 10, letterSpacing: "0.5em", textTransform: "uppercase", marginBottom: 26 }}>
+              A Theoretical Framework
+            </div>
+            <h1 style={{ color: C.gold, fontSize: "clamp(36px, 6vw, 72px)", fontWeight: 300, letterSpacing: "0.03em", margin: 0, fontFamily: "Georgia, serif" }}>
+              The Phi-Harmonic<br />Toroidal Field
+            </h1>
+            <div style={{ color: C.body, fontSize: "clamp(13px, 1.6vw, 17px)", letterSpacing: "0.06em", marginTop: 24, fontFamily: "Georgia, serif" }}>
+              The Wierzbicki Phenomenon Omnivortex Device
+            </div>
+            <div style={{ color: C.dim, fontSize: 13, letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 30 }}>
+              φ · 3 · 6 · 9 · ∞
+            </div>
+            <div style={{ width: 1, height: 60, background: C.amber, margin: "60px auto 0", opacity: 0.4, animation: "pulse 2s infinite" }} />
+            <div style={{ color: C.dim, fontSize: 9, letterSpacing: "0.4em", textTransform: "uppercase", marginTop: 10 }}>Scroll</div>
+          </div>
+        </section>
+      );
+    }
+
+    // ── RATIO ────────────────────────────────────────────────────
+    function RatioSection() {
+      const canvasRef = useRef(null);
+      const sectionRef = useRef(null);
+      const visRef = useVisible(sectionRef);
+      useEffect(() => {
+        const canvas = canvasRef.current; if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width, H = canvas.height;
+        let frame, t = 0;
+        const draw = () => {
+          frame = requestAnimationFrame(draw);
+          if (!visRef.current) return;
+          t += 0.012;
+          ctx.fillStyle = "rgba(2,8,16,0.12)"; ctx.fillRect(0, 0, W, H);
+          const cx = W/2, cy = H/2, N = 380;
+          for (let i = 0; i < N; i++) {
+            const a = i * GA + t * 0.1;
+            const r = Math.sqrt(i / N) * Math.min(W,H) * 0.42;
+            const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r;
+            const fade = i/N;
+            ctx.beginPath(); ctx.arc(x, y, 1.5 + fade*2, 0, TAU);
+            ctx.fillStyle = `rgba(255,215,0,${0.15 + fade*0.45})`; ctx.fill();
+          }
+          ctx.beginPath(); ctx.arc(cx, cy, 2, 0, TAU);
+          ctx.fillStyle = "rgba(255,255,255,0.6)"; ctx.fill();
+        };
+        draw();
+        return () => cancelAnimationFrame(frame);
+      }, []);
+
+      return (
+        <section id="ratio" ref={sectionRef} style={sectionStyle}>
+          <div style={chapterLabel}>Chapter I</div>
+          <h2 style={h2Style}>The Ratio as Structural Law</h2>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:32, marginTop:8 }}>
+            <canvas ref={canvasRef} width={360} height={360} style={{ width:"min(360px,80vw)", height:"min(360px,80vw)" }} />
+            <div style={{ maxWidth:620, textAlign:"center" }}>
+              <p style={bodyText}>φ = (1 + √5) ÷ 2 ≈ 1.618. It appears as the growth ratio of biological systems — sunflower seeds, nautilus shells, leaves on a stem — because it is the ratio at which a system can grow without ever revisiting itself. Nature chooses it not for beauty, but as the solution to a deep optimisation problem.</p>
+              <p style={bodyText}>Expressed as an angle (360° ÷ φ²), it becomes <b style={{color:C.gold}}>137.5°</b> — the golden angle, which places each new element maximally far from all previous elements. Complete coverage without gaps. Complete separation without interference.</p>
+            </div>
+            <div style={{ display:"flex", gap:40, marginTop:12, flexWrap:"wrap", justifyContent:"center", fontFamily:"monospace", fontSize:12, color:C.dim, letterSpacing:"0.1em" }}>
+              <div>φ = <span style={{color:C.gold}}>{PHI.toFixed(6)}</span></div>
+              <div>GA = <span style={{color:C.gold}}>{(GA*180/Math.PI).toFixed(4)}°</span></div>
+              <div>φ² = <span style={{color:C.gold}}>{(PHI*PHI).toFixed(6)}</span></div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // ── TORUS ────────────────────────────────────────────────────
+    function TorusSection() {
+      const mountRef = useRef(null);
+      const sectionRef = useRef(null);
+      const visRef = useVisible(sectionRef);
+      useEffect(() => {
+        const mount = mountRef.current; if (!mount) return;
+        const { renderer, W, H } = mkRenderer(mount);
+        const scene = new THREE.Scene();
+        const cam = new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
+        cam.position.set(0, 3, 9); cam.lookAt(0,0,0);
+        scene.add(new THREE.AmbientLight(0x223344, 1.5));
+        const pl = new THREE.PointLight(0xffd080, 2, 30); pl.position.set(5,5,5); scene.add(pl);
+        const pivot = new THREE.Group(); scene.add(pivot); pivot.rotation.x = 0.4;
+        const R = 2.6, rm = R/PHI;
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,24,80),
+          new THREE.MeshPhongMaterial({color:0xb8860b,emissive:0x110800,transparent:true,opacity:0.18,side:THREE.DoubleSide})));
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,18,56),
+          new THREE.MeshBasicMaterial({color:0xb8860b,wireframe:true,transparent:true,opacity:0.18})));
+        const N=800; const pos=new Float32Array(N*3); const phases=new Float32Array(N);
+        for(let i=0;i<N;i++){phases[i]=Math.random()*TAU;const th=Math.random()*TAU,ph=phases[i];pos[i*3]=(R+rm*Math.cos(ph))*Math.cos(th);pos[i*3+1]=(R+rm*Math.cos(ph))*Math.sin(th);pos[i*3+2]=rm*Math.sin(ph);}
+        const pGeo=new THREE.BufferGeometry(); pGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+        pivot.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xffd700,size:0.05,transparent:true,opacity:0.7})));
+        let frame,t=0;
+        const loop=()=>{
+          frame=requestAnimationFrame(loop); if(!visRef.current)return;
+          t+=0.014; pivot.rotation.y+=0.0035;
+          const arr=pGeo.attributes.position.array;
+          for(let i=0;i<N;i++){const th=(phases[i]+t*0.5)%TAU,ph=phases[i]*PHI+t*0.3;arr[i*3]=(R+rm*Math.cos(ph))*Math.cos(th);arr[i*3+1]=(R+rm*Math.cos(ph))*Math.sin(th);arr[i*3+2]=rm*Math.sin(ph);}
+          pGeo.attributes.position.needsUpdate=true; renderer.render(scene,cam);
+        };
+        loop();
+        return ()=>{cancelAnimationFrame(frame);renderer.dispose();if(mount.contains(renderer.domElement))mount.removeChild(renderer.domElement);};
+      },[]);
+      return (
+        <section id="torus" ref={sectionRef} style={sectionStyle}>
+          <div style={chapterLabel}>Chapter II</div>
+          <h2 style={h2Style}>Toroidal Field Dynamics</h2>
+          <div className="torus-grid">
+            <div ref={mountRef} style={{height:420,width:"100%"}} />
+            <div>
+              <p style={bodyText}>The torus appears as the fundamental stable field structure at every scale of the known universe. Earth's magnetosphere is toroidal. The heart's electromagnetic field is toroidal. Stable smoke rings, electron orbitals, galactic structures — toroidal.</p>
+              <p style={bodyText}>This repetition across fourteen orders of magnitude is not coincidental. It is the signature of the only shape that sustains a self-circulating energy loop without dissipation. Energy flows out through one pole, around the outside, in through the other, through the centre, and back.</p>
+              <p style={bodyText}>When proportioned to φ — when R/r = 1.618 — the torus acquires a further property: its major circumference and minor circumference stand in golden ratio. Every loop of the field structure is in phi-proportion to every other loop.</p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // ── WINDINGS ─────────────────────────────────────────────────
+    function WindingsSection() {
+      const mountRef = useRef(null);
+      const sectionRef = useRef(null);
+      const visRef = useVisible(sectionRef);
+      useEffect(() => {
+        const mount = mountRef.current; if (!mount) return;
+        const { renderer, W, H } = mkRenderer(mount);
+        const scene = new THREE.Scene();
+        const cam = new THREE.PerspectiveCamera(48, W/H, 0.1, 100);
+        cam.position.set(0,2.5,10); cam.lookAt(0,0,0);
+        scene.add(new THREE.AmbientLight(0x223344,1.5));
+        const pl=new THREE.PointLight(0xffd080,2,30); pl.position.set(5,5,5); scene.add(pl);
+        const pivot=new THREE.Group(); scene.add(pivot); pivot.rotation.x=0.3;
+        const R=2.8,rm=R/PHI;
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,22,80),
+          new THREE.MeshPhongMaterial({color:0xb8860b,emissive:0x110800,transparent:true,opacity:0.08,side:THREE.DoubleSide})));
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,16,56),
+          new THREE.MeshBasicMaterial({color:0x3a3020,wireframe:true,transparent:true,opacity:0.12})));
+        const windingDefs=[{color:0x00ffe0,dir:1,off:0},{color:0xffaa00,dir:-1,off:TAU/3},{color:0xaa44ff,dir:PHI,off:GA}];
+        windingDefs.forEach(({color,dir,off})=>{
+          const pts=[];
+          for(let i=0;i<=800;i++){const t=i/800,th=t*TAU*5,ph=dir*t*TAU*5/PHI+off,rr=rm*0.82;
+            pts.push(new THREE.Vector3((R+rr*Math.cos(ph))*Math.cos(th),(R+rr*Math.cos(ph))*Math.sin(th),rr*Math.sin(ph)));}
+          pivot.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity:0.7})));
+        });
+        for(let i=0;i<8;i++){const a=i*GA;const s=new THREE.Mesh(new THREE.SphereGeometry(0.12,12,12),new THREE.MeshPhongMaterial({color:0xffd700,emissive:0xff8800,emissiveIntensity:2}));s.position.set(R*Math.cos(a),R*Math.sin(a),0);pivot.add(s);}
+        const removeDrag=dragRotate(mount,pivot);
+        let frame,t=0;
+        const loop=()=>{frame=requestAnimationFrame(loop);if(!visRef.current)return;t+=0.012;pivot.rotation.y+=0.003;renderer.render(scene,cam);};
+        loop();
+        return ()=>{cancelAnimationFrame(frame);removeDrag();renderer.dispose();if(mount.contains(renderer.domElement))mount.removeChild(renderer.domElement);};
+      },[]);
+      return (
+        <section id="windings" ref={sectionRef} style={sectionStyle}>
+          <div style={chapterLabel}>Chapter III</div>
+          <h2 style={h2Style}>The Three Windings</h2>
+          <div className="torus-grid">
+            <div>
+              <p style={bodyText}>Three windings inhabit the phi-torus, each offset by the golden angle. The <span style={{color:"#00ffe0"}}>primary</span> winding advances clockwise. The <span style={{color:"#ffaa00"}}>counter</span> winding advances counterclockwise at 120°. The <span style={{color:"#aa44ff"}}>harmonic</span> winding advances at the golden angle rate — φ turns per major revolution.</p>
+              <p style={bodyText}>Each winding traces a path that visits every point on the torus surface exactly once before returning to its origin. The three together create a field structure with no preferred axis — identical in all orientations. This is the toroidal equivalent of a sphere.</p>
+              <p style={bodyText}>The eight gold nodes are where the three winding paths cross simultaneously — the Fibonacci tap points, spaced at golden angle intervals around the equator. These are the antinodes of the standing wave: points of maximum constructive interference.</p>
+            </div>
+            <div ref={mountRef} style={{height:440,width:"100%"}} />
+          </div>
+          <p style={{...bodyText,marginTop:20,textAlign:"center",fontStyle:"italic",opacity:0.7}}>Drag to rotate</p>
+        </section>
+      );
+    }
+
+    // ── AXIS ─────────────────────────────────────────────────────
+    function AxisSection() {
+      const mountRef = useRef(null);
+      const sectionRef = useRef(null);
+      const visRef = useVisible(sectionRef);
+      useEffect(() => {
+        const mount = mountRef.current; if (!mount) return;
+        const { renderer, W, H } = mkRenderer(mount);
+        const scene = new THREE.Scene();
+        const cam = new THREE.PerspectiveCamera(48, W/H, 0.1, 100);
+        cam.position.set(0,1,10); cam.lookAt(0,0,0);
+        scene.add(new THREE.AmbientLight(0x223344,1.5));
+        const pl=new THREE.PointLight(0xffd080,2,30); pl.position.set(5,5,5); scene.add(pl);
+        const pivot=new THREE.Group(); scene.add(pivot);
+        const R=2.8,rm=R/PHI;
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,22,80),
+          new THREE.MeshPhongMaterial({color:0xb8860b,transparent:true,opacity:0.06,side:THREE.DoubleSide})));
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,14,48),
+          new THREE.MeshBasicMaterial({color:0x3a3020,wireframe:true,transparent:true,opacity:0.1})));
+        // 9-axis cylinder
+        const axisGeo=new THREE.CylinderGeometry(0.04,0.04,8,16);
+        const axisMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.15});
+        pivot.add(new THREE.Mesh(axisGeo,axisMat));
+        // 3,6,9 rings
+        [0.6,1.0,1.6].forEach((s,i)=>{
+          const ring=new THREE.Mesh(new THREE.TorusGeometry(rm*s,0.02,8,48),
+            new THREE.MeshBasicMaterial({color:[0x4488ff,0xff4444,0xffffff][i],transparent:true,opacity:0.5}));
+          ring.rotation.x=Math.PI/2; pivot.add(ring);
+        });
+        // Flowing particles along axis
+        const N=200; const aPos=new Float32Array(N*3); const aPhases=new Float32Array(N);
+        for(let i=0;i<N;i++){aPos[i*3]=0;aPos[i*3+1]=(Math.random()-0.5)*8;aPos[i*3+2]=0;aPhases[i]=Math.random();}
+        const aGeo=new THREE.BufferGeometry(); aGeo.setAttribute("position",new THREE.BufferAttribute(aPos,3));
+        pivot.add(new THREE.Points(aGeo,new THREE.PointsMaterial({color:0xffffff,size:0.06,transparent:true,opacity:0.4})));
+        let frame,t=0;
+        const loop=()=>{
+          frame=requestAnimationFrame(loop); if(!visRef.current)return;
+          t+=0.014; pivot.rotation.y+=0.004;
+          const arr=aGeo.attributes.position.array;
+          for(let i=0;i<N;i++){arr[i*3+1]=((aPhases[i]+t*0.3)%1)*8-4;}
+          aGeo.attributes.position.needsUpdate=true; renderer.render(scene,cam);
+        };
+        loop();
+        return ()=>{cancelAnimationFrame(frame);renderer.dispose();if(mount.contains(renderer.domElement))mount.removeChild(renderer.domElement);};
+      },[]);
+      return (
+        <section id="axis" ref={sectionRef} style={sectionStyle}>
+          <div style={chapterLabel}>Chapter IV</div>
+          <h2 style={h2Style}>Tesla's 3 · 6 · 9</h2>
+          <div className="torus-grid">
+            <div>
+              <p style={{...bodyText,fontStyle:"italic",color:C.gold}}>"If you knew the magnificence of the three, the six, and the nine, you would have a key to the universe."</p>
+              <p style={bodyText}>The 3 and the 6 are the two counter-rotating field directions — the primary and counter windings. They alternate, they contain, they <i>are</i> the field structure. 3 + 6 = 9. 3 × 6 = 18 → 9. Every combination collapses back to 9.</p>
+              <p style={bodyText}>The 9 is the central axis. The void at the torus centre. The zone of stillness around which the implosion vortex revolves. Schauberger called this the eye of the storm. The reference point. The source.</p>
+            </div>
+            <div ref={mountRef} style={{height:440,width:"100%"}} />
+          </div>
+        </section>
+      );
+    }
+
+    // ── WAVE ─────────────────────────────────────────────────────
+    function WaveSection() {
+      const mountRef = useRef(null);
+      const sectionRef = useRef(null);
+      const visRef = useVisible(sectionRef);
+      useEffect(() => {
+        const mount = mountRef.current; if (!mount) return;
+        const { renderer, W, H } = mkRenderer(mount);
+        const scene = new THREE.Scene();
+        const cam = new THREE.PerspectiveCamera(48, W/H, 0.1, 100);
+        cam.position.set(0,4,11); cam.lookAt(0,0,0);
+        scene.add(new THREE.AmbientLight(0x223344,1.4));
+        const pivot=new THREE.Group(); scene.add(pivot); pivot.rotation.x=0.3;
+        const R=2.8,rm=R/PHI;
+        pivot.add(new THREE.Mesh(new THREE.TorusGeometry(R,rm,22,60),
+          new THREE.MeshPhongMaterial({color:0xb8860b,transparent:true,opacity:0.08,side:THREE.DoubleSide})));
+        const N=4000; const wPos=new Float32Array(N*3),wCol=new Float32Array(N*3),wTh=new Float32Array(N),wPh=new Float32Array(N),wPs=new Float32Array(N);
+        for(let i=0;i<N;i++){wTh[i]=Math.random()*TAU;wPh[i]=Math.random()*TAU;wPs[i]=Math.random()*TAU;}
+        const wGeo=new THREE.BufferGeometry(); wGeo.setAttribute("position",new THREE.BufferAttribute(wPos,3)); wGeo.setAttribute("color",new THREE.BufferAttribute(wCol,3));
+        pivot.add(new THREE.Points(wGeo,new THREE.PointsMaterial({size:0.065,vertexColors:true,transparent:true,opacity:0.85,depthWrite:false})));
+        const nodeMats=[];
+        for(let i=0;i<8;i++){const a=i*GA;const s=new THREE.Mesh(new THREE.SphereGeometry(0.13,14,14),new THREE.MeshPhongMaterial({color:0xffd700,emissive:0xff8800,emissiveIntensity:2}));s.position.set(R*Math.cos(a),R*Math.sin(a),0);pivot.add(s);nodeMats.push({mat:s.material,phase:i});}
+        const removeDrag=dragRotate(mount,pivot);
+        let frame,t=0;
+        const loop=()=>{
+          frame=requestAnimationFrame(loop); if(!visRef.current)return;
+          t+=0.014; pivot.rotation.y+=0.0025;
+          const pa=wGeo.attributes.position.array,ca=wGeo.attributes.color.array;
+          for(let i=0;i<N;i++){const th=wTh[i],ph=wPh[i],ps=wPs[i];
+            const w1=Math.sin(th*3*PHI-t+ps),w2=Math.sin(ph*PHI+t*0.618+ps*0.5),w3=Math.cos(th*PHI-ph*PHI+t*0.382);
+            const amp=(w1*0.5+w2*0.3+w3*0.2),cosPh=Math.cos(ph),sinPh=Math.sin(ph),cosTh=Math.cos(th),sinTh=Math.sin(th);
+            const nx=cosPh*cosTh,ny=cosPh*sinTh,nz=sinPh,disp=amp*0.2;
+            pa[i*3]=(R+rm*cosPh)*cosTh+nx*disp;pa[i*3+1]=(R+rm*cosPh)*sinTh+ny*disp;pa[i*3+2]=rm*sinPh+nz*disp;
+            const a=(amp+1)*0.5;
+            if(a>0.6){const s=(a-0.6)/0.4;ca[i*3]=0.6+s*0.4;ca[i*3+1]=0.5*s;ca[i*3+2]=0;}
+            else if(a<0.4){const s=(0.4-a)/0.4;ca[i*3]=0;ca[i*3+1]=0.6*s;ca[i*3+2]=0.85*s;}
+            else{const s=1-Math.abs(a-0.5)*10;ca[i*3]=0.1*s;ca[i*3+1]=0.1*s;ca[i*3+2]=0.12*s;}}
+          wGeo.attributes.position.needsUpdate=true;wGeo.attributes.color.needsUpdate=true;
+          nodeMats.forEach(({mat,phase})=>{mat.emissiveIntensity=1.5+1.5*Math.sin(t*PHI+phase);});
+          renderer.render(scene,cam);
+        };
+        loop();
+        return ()=>{cancelAnimationFrame(frame);removeDrag();renderer.dispose();if(mount.contains(renderer.domElement))mount.removeChild(renderer.domElement);};
+      },[]);
+      return (
+        <section id="wave" ref={sectionRef} style={{...sectionStyle,padding:"60px 24px"}}>
+          <div style={chapterLabel}>Chapter V</div>
+          <h2 style={h2Style}>The Standing Wave</h2>
+          <div style={{maxWidth:900,width:"100%"}}>
+            <p style={{...bodyText,textAlign:"center",maxWidth:620}}>When three phi-harmonic frequencies interact inside the toroidal geometry, they create standing wave nodes — fixed points where energy concentrates rather than flows. These nodes form at Fibonacci positions, isolated by the golden angle. Maximally separated. None interfering.</p>
+            <div ref={mountRef} style={{height:500,marginTop:24}} />
+            <p style={{...bodyText,textAlign:"center",maxWidth:620,marginTop:24}}>Gold is positive amplitude. Teal is negative. Between them, the dark bands are where the waves cancel — zones of silence where the field holds itself in structural tension.</p>
+          </div>
+        </section>
+      );
+    }
+
+    // ── SOUND ────────────────────────────────────────────────────
+    const SYNTH_NODES = Array.from({length:8},(_,i)=>({i,angle:i*GA-Math.PI/2,freq:parseFloat((111*Math.pow(PHI,i/3)).toFixed(2)),}));
+    const SS=440,SR=SS*0.32,SSTEP=6,SCOLS=Math.ceil(SS/SSTEP),SROWS=Math.ceil(SS/SSTEP);
+
+    function SoundSection() {
+      const fieldRef=useRef(null),waveRef=useRef(null),sectionRef=useRef(null),visRef=useVisible(sectionRef);
+      const gainRef=useRef([]),oscRef=useRef([]),activeRef=useRef(new Set()),audioReadyRef=useRef(false),distsRef=useRef(null);
+      const [activeUI,setActiveUI]=useState(new Set());
+
+      useEffect(()=>{
+        const cx=SS/2,cy=SS/2;
+        const positions=SYNTH_NODES.map(({angle})=>({x:cx+SR*Math.cos(angle),y:cy+SR*Math.sin(angle)}));
+        distsRef.current={positions,dists:SYNTH_NODES.map(({i})=>{const{x:nx,y:ny}=positions[i];return Float32Array.from({length:SROWS*SCOLS},(_,idx)=>{const px=(idx%SCOLS)*SSTEP,py=Math.floor(idx/SCOLS)*SSTEP;return Math.sqrt((px-nx)**2+(py-ny)**2);});})};
+      },[]);
+
+      useEffect(()=>{
+        const reverb=new Tone.Reverb({decay:5,wet:0.5}).toDestination();
+        const chorus=new Tone.Chorus(0.4,1.5,0.3).connect(reverb).start();
+        const pairs=SYNTH_NODES.map(({freq})=>{const gain=new Tone.Gain(0).connect(chorus);const osc=new Tone.Oscillator({frequency:freq,type:"sine"}).connect(gain);osc.start();return{osc,gain};});
+        gainRef.current=pairs.map(p=>p.gain); oscRef.current=pairs.map(p=>p.osc);
+        return()=>{pairs.forEach(({osc,gain})=>{osc.stop();osc.dispose();gain.dispose();});chorus.dispose();reverb.dispose();};
+      },[]);
+
+      useEffect(()=>{
+        const field=fieldRef.current,wave=waveRef.current; if(!field||!wave)return;
+        const fc=field.getContext("2d"),wc=wave.getContext("2d");
+        let frame,t=0; const cx=SS/2,cy=SS/2;
+        const render=()=>{
+          frame=requestAnimationFrame(render); if(!visRef.current)return;
+          t+=0.016; const active=Array.from(activeRef.current),data=distsRef.current; if(!data)return;
+          fc.fillStyle="rgba(2,8,16,0.2)"; fc.fillRect(0,0,SS,SS);
+          if(active.length>0){const id=fc.getImageData(0,0,SS,SS),d=id.data,n=active.length;
+            for(let row=0;row<SROWS;row++){for(let col=0;col<SCOLS;col++){const gi=row*SCOLS+col;let sum=0;
+              for(const idx of active){const dist=data.dists[idx][gi],freq=SYNTH_NODES[idx].freq,lambda=1400/(freq*0.009);sum+=Math.sin(TAU*t*freq*0.009-TAU*dist/lambda);}
+              sum/=n;const amp=(sum+1)*0.5,alph=Math.abs(sum)*60|0,px=col*SSTEP,py=row*SSTEP;
+              for(let dy=0;dy<SSTEP&&py+dy<SS;dy++){for(let dx=0;dx<SSTEP&&px+dx<SS;dx++){const off=((py+dy)*SS+(px+dx))*4;d[off]=(220*amp+10)|0;d[off+1]=(150*amp)|0;d[off+2]=(20+80*(1-amp))|0;d[off+3]=alph;}}}}
+            fc.putImageData(id,0,0);}
+          [0.5,1.0,1.5].forEach((s,i)=>{fc.beginPath();fc.arc(cx,cy,SR*s,0,TAU);fc.strokeStyle=`rgba(184,134,11,${0.14-i*0.04})`;fc.lineWidth=1;fc.stroke();});
+          const cg=fc.createRadialGradient(cx,cy,0,cx,cy,20);cg.addColorStop(0,`rgba(255,255,255,${0.6+0.4*Math.sin(t*PHI)})`);cg.addColorStop(1,"rgba(255,255,255,0)");
+          fc.beginPath();fc.arc(cx,cy,20,0,TAU);fc.fillStyle=cg;fc.fill();
+          SYNTH_NODES.forEach(({i,freq,angle})=>{const{x,y}=data.positions[i];const isOn=activeRef.current.has(i);const p=0.5+0.5*Math.sin(t*freq*0.013+i);
+            if(isOn){for(let r=0;r<5;r++){const phase=((t*freq*0.007+r*0.2)%1);fc.beginPath();fc.arc(x,y,phase*SR*0.85,0,TAU);fc.strokeStyle=`rgba(255,215,0,${(1-phase)*0.35})`;fc.lineWidth=1.5;fc.stroke();}}
+            fc.beginPath();fc.arc(x,y,isOn?8+p*3:6,0,TAU);fc.fillStyle=isOn?`rgba(255,215,0,${0.85+p*0.15})`:"rgba(55,48,28,0.9)";fc.fill();fc.strokeStyle=isOn?"#ffd700":"#3a3020";fc.lineWidth=1.5;fc.stroke();
+            const lx=cx+(SR+38)*Math.cos(angle),ly=cy+(SR+38)*Math.sin(angle);fc.textAlign="center";fc.textBaseline="middle";fc.font="bold 10px monospace";fc.fillStyle=isOn?"#ffd700":"#3a4455";fc.fillText(`${Math.round(freq)} Hz`,lx,ly);});
+          const WW=wave.width,WH=wave.height;wc.fillStyle="rgba(2,8,16,0.3)";wc.fillRect(0,0,WW,WH);
+          if(active.length>0){wc.beginPath();for(let x=0;x<WW;x++){let sum=0;const tOff=(x/WW)*0.4;for(const idx of active)sum+=Math.sin(TAU*(t+tOff)*SYNTH_NODES[idx].freq*0.009);sum/=active.length;const y=WH/2-sum*(WH/2-4);x===0?wc.moveTo(x,y):wc.lineTo(x,y);}wc.strokeStyle="rgba(255,215,0,0.7)";wc.lineWidth=1.5;wc.stroke();}
+          else{wc.beginPath();wc.moveTo(0,WH/2);wc.lineTo(WW,WH/2);wc.strokeStyle="rgba(255,215,0,0.12)";wc.lineWidth=1;wc.stroke();}
+        };
+        render(); return()=>cancelAnimationFrame(frame);
+      },[]);
+
+      const toggle=async(i)=>{if(!audioReadyRef.current){await Tone.start();Tone.getDestination().volume.value=-6;audioReadyRef.current=true;}const next=new Set(activeRef.current);if(next.has(i)){next.delete(i);gainRef.current[i]?.gain.rampTo(0,0.08);}else{next.add(i);gainRef.current[i]?.gain.rampTo(0.26,0.12);}activeRef.current=next;setActiveUI(new Set(next));};
+      const activateAll=async()=>{if(!audioReadyRef.current){await Tone.start();Tone.getDestination().volume.value=-6;audioReadyRef.current=true;}SYNTH_NODES.forEach(({i})=>{if(!activeRef.current.has(i))gainRef.current[i]?.gain.rampTo(0.16,0.15);});activeRef.current=new Set([0,1,2,3,4,5,6,7]);setActiveUI(new Set([0,1,2,3,4,5,6,7]));};
+      const silenceAll=()=>{SYNTH_NODES.forEach(({i})=>gainRef.current[i]?.gain.rampTo(0,0.2));activeRef.current=new Set();setActiveUI(new Set());};
+      const handleClick=async(e)=>{const rect=e.currentTarget.getBoundingClientRect(),sx=SS/rect.width,sy=SS/rect.height,mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy,data=distsRef.current;for(const{i}of SYNTH_NODES){const{x,y}=data.positions[i];if(Math.sqrt((mx-x)**2+(my-y)**2)<24){await toggle(i);return;}}};
+
+      return (
+        <section id="sound" ref={sectionRef} style={sectionStyle}>
+          <div style={chapterLabel}>Chapter VI</div>
+          <h2 style={h2Style}>The Sound of the Field</h2>
+          <p style={{...bodyText,textAlign:"center",maxWidth:600,marginBottom:30}}>Eight nodes, each resonating at 111 × φ^(n/3) Hz. Click any to bring it into the field. Because φ is irrational, the beating between phi-harmonic tones never repeats.</p>
+          <canvas ref={fieldRef} width={SS} height={SS} onClick={handleClick} style={{width:"min(440px,86vw)",height:"min(440px,86vw)",cursor:"crosshair",borderRadius:"50%",border:"1px solid rgba(184,134,11,0.15)"}} />
+          <canvas ref={waveRef} width={420} height={48} style={{width:"min(420px,80vw)",height:48,marginTop:12,border:"1px solid rgba(255,215,0,0.08)",borderRadius:2}} />
+          <div style={{display:"flex",gap:5,marginTop:16,flexWrap:"wrap",justifyContent:"center",maxWidth:460}}>
+            {SYNTH_NODES.map(({i,freq})=>(
+              <button key={i} onClick={()=>toggle(i)} style={{background:activeUI.has(i)?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.025)",border:`1px solid ${activeUI.has(i)?"rgba(255,215,0,0.6)":"rgba(255,255,255,0.06)"}`,color:activeUI.has(i)?"#ffd700":"#3a4455",padding:"5px 9px",fontSize:9,letterSpacing:"0.08em",cursor:"pointer",borderRadius:2,fontFamily:"monospace"}}>{Math.round(freq)}</button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:10}}>
+            {[{label:"Full Chord",fn:activateAll},{label:"Silence",fn:silenceAll}].map(({label,fn})=>(
+              <button key={label} onClick={fn} style={{background:"transparent",border:"1px solid rgba(184,134,11,0.35)",color:"#8a6800",padding:"6px 16px",fontSize:10,letterSpacing:"0.18em",cursor:"pointer",borderRadius:2,textTransform:"uppercase"}}>{label}</button>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    // ── REMAINING SECTIONS (simplified) ──────────────────────────
+    function SimpleSection({id,chapter,title,children}) {
+      return (
+        <section id={id} style={sectionStyle}>
+          <div style={chapterLabel}>{chapter}</div>
+          <h2 style={h2Style}>{title}</h2>
+          <div style={{maxWidth:680,textAlign:"center"}}>{children}</div>
+        </section>
+      );
+    }
+
+    function CymaticsSection() {
+      return (
+        <SimpleSection id="cymatics" chapter="Chapter VII" title="Cymatics · Frequency as Form">
+          <p style={bodyText}>Hans Jenny demonstrated that specific frequencies produce reproducible geometric standing-wave patterns in physical media. The phi-harmonic node frequency series (111 × φ^(n/3) Hz) predicts Fibonacci symmetry orders — 3-fold, 5-fold, 8-fold, 13-fold — at successive node positions around the torus equator.</p>
+          <p style={bodyText}>These are not decorative patterns. They are the geometric signature of the field organising matter in response to phi-harmonic frequency input. The same geometry appears in snowflakes, crystal lattices, and biological tissue.</p>
+        </SimpleSection>
+      );
+    }
+
+    function HermeticSection() {
+      const principles = ["Mentalism","Correspondence","Vibration","Polarity","Rhythm","Cause & Effect","Gender"];
+      return (
+        <SimpleSection id="hermetic" chapter="Chapter VIII" title="The Hermetic Principles">
+          <p style={bodyText}>The seven Hermetic principles, encoded in the Kybalion, describe the operating system of the universe. The phi-torus instantiates all seven simultaneously.</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginTop:16}}>
+            {principles.map(p=>(
+              <div key={p} style={{padding:"6px 14px",border:"1px solid rgba(184,134,11,0.2)",borderRadius:2,color:C.amber,fontSize:11,letterSpacing:"0.1em"}}>{p}</div>
+            ))}
+          </div>
+          <p style={{...bodyText,marginTop:24}}>Vibration is primary. Everything moves. Everything vibrates. The phi-torus is a vibration machine, structured so that each frequency reinforces rather than cancels every other.</p>
+        </SimpleSection>
+      );
+    }
+
+    function SchaubergerSection() {
+      return (
+        <SimpleSection id="schauberger" chapter="Chapter IX" title="Viktor Schauberger · Implosion">
+          <p style={bodyText}>Austrian naturalist Viktor Schauberger (1885–1958) observed that nature moves energy through implosion — inward, cooling, centripetal spirals — not the centrifugal explosion of conventional technology. The trout holds position in a fast-moving stream not by fighting the current but by creating a low-pressure vortex at its tail.</p>
+          <p style={bodyText}>The toroidal field is the geometry of implosion. Energy spirals inward through the outer surface, contracts through the central hole, and re-emerges through the axis. The phi-proportioned torus is the shape in which this process achieves its most efficient form.</p>
+        </SimpleSection>
+      );
+    }
+
+    function BiologySection() {
+      return (
+        <SimpleSection id="biology" chapter="Chapter X" title="Biological Resonance">
+          <p style={bodyText}>Lakhovsky (1925) demonstrated that every biological cell functions as a microscopic LC oscillating circuit. Disease is oscillatory disequilibrium — a departure from the cell's natural resonant frequency. Restoration of coherent oscillatory entrainment was shown to restore biological function in documented clinical trials.</p>
+          <p style={bodyText}>Valone (2003) established that pulsed electromagnetic fields affect transmembrane potential, ion channel activity, mitochondrial electron transport, and ATP production. Healthy cells maintain 70-90mV transmembrane potential. At 15mV, the cell is cancerous. The field is the biology.</p>
+        </SimpleSection>
+      );
+    }
+
+    function RussellSection() {
+      return (
+        <SimpleSection id="russell" chapter="Chapter XI" title="Walter Russell · The Wave Cosmogony">
+          <p style={bodyText}>Walter Russell (1871-1963) developed a complete cosmogony based on wave mechanics. His central axiom: all matter is light compressed into standing waves. The elements of the periodic table are different frequencies of the same universal wave, arranged in nine octaves.</p>
+          <p style={bodyText}>Russell's "Still Magnetic Light" — the unmanifested source from which all waves emerge — maps to the 9-axis. The zone of perfect stillness at the torus centre. Not absence, but potential prior to expression. Russell drew it. We wound the coils.</p>
+        </SimpleSection>
+      );
+    }
+
+    function BlueprintSection() {
+      const rows=[["Core","Phi-torus, R/r = φ = 1.618. R=89mm, r=55mm."],["Windings","Three coils: Primary · Counter · Harmonic. Golden angle distribution."],["Nodes","Eight Fibonacci tap points around the equator at golden angle intervals."],["Driver","L298N H-bridge + Arduino Nano. Phi-harmonic frequency sweep."],["Measurement","NanoVNA-H · Proster LCR · Multimeter. Comparative V1/V2/V3 protocol."]];
+      return (
+        <section id="blueprint" style={sectionStyle}>
+          <div style={chapterLabel}>Chapter XII</div>
+          <h2 style={h2Style}>The Blueprint</h2>
+          <p style={{...bodyText,textAlign:"center",maxWidth:600,marginBottom:36}}>The complete device architecture as of May 2026 — physical hardware, wound and measured.</p>
+          <div style={{maxWidth:720,width:"100%",border:"1px solid rgba(184,134,11,0.25)",borderRadius:2}}>
+            {rows.map(([k,v],i)=>(
+              <div key={k} style={{display:"flex",gap:24,padding:"16px 22px",background:i%2===0?"rgba(184,134,11,0.05)":"transparent",borderBottom:i<rows.length-1?"1px solid rgba(184,134,11,0.08)":"none",flexWrap:"wrap"}}>
+                <div style={{color:C.gold,fontSize:11,letterSpacing:"0.16em",textTransform:"uppercase",minWidth:100,paddingTop:2,fontFamily:"Georgia,serif"}}>{k}</div>
+                <div style={{color:C.text,fontSize:14.5,flex:1,fontFamily:"Georgia,serif",lineHeight:1.7}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:32,textAlign:"center"}}>
+            <a href="https://github.com/Te55er4ct/phi-harmonic-toroidal-field" target="_blank" rel="noopener noreferrer"
+              style={{color:C.amber,fontSize:11,letterSpacing:"0.2em",textTransform:"uppercase",textDecoration:"none",border:"1px solid rgba(184,134,11,0.3)",padding:"8px 20px",borderRadius:2}}>
+              GitHub Repository →
+            </a>
+          </div>
+        </section>
+      );
+    }
+
+    function CloseSection() {
+      return (
+        <section id="close" style={sectionStyle}>
+          <div style={chapterLabel}>XIII · Convergence</div>
+          <div style={{maxWidth:580,textAlign:"center"}}>
+            <p style={{...bodyText,fontStyle:"italic",fontSize:17}}>The convergence of φ, the Fibonacci sequence, toroidal geometry, Tesla's 3-6-9, and zero point field theory is not accidental.</p>
+            <p style={{...bodyText,marginTop:28}}>They are different descriptions of the same underlying structure — the way energy organises itself when given the freedom to do so.</p>
+            <div style={{width:60,height:1,background:C.amber,margin:"60px auto 24px",opacity:0.5}} />
+            <div style={{color:C.dim,fontSize:10,letterSpacing:"0.3em",textTransform:"uppercase"}}>φ = 1.6180… · GA = 137.5° · 3 · 6 · 9</div>
+            <div style={{marginTop:24}}>
+              <a href="https://github.com/Te55er4ct/phi-harmonic-toroidal-field" target="_blank" rel="noopener noreferrer"
+                style={{color:C.amber,fontSize:11,letterSpacing:"0.2em",textTransform:"uppercase",textDecoration:"none"}}>
+                github.com/Te55er4ct/phi-harmonic-toroidal-field
+              </a>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // ── SIDENAV ──────────────────────────────────────────────────
+    function SideNav() {
+      const [active,setActive]=useState("hero");
+      useEffect(()=>{
+        const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting)setActive(e.target.id);});},{threshold:0.4});
+        SECTIONS.forEach(s=>{const el=document.getElementById(s.id);if(el)obs.observe(el);});
+        return()=>obs.disconnect();
+      },[]);
+      const nav=(id)=>{const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth"});};
+      return (
+        <nav style={{position:"fixed",right:20,top:"50%",transform:"translateY(-50%)",zIndex:100,display:"flex",flexDirection:"column",gap:4,padding:"10px 0"}} className="phi-nav">
+          {SECTIONS.map(s=>(
+            <button key={s.id} onClick={()=>nav(s.id)} style={{background:"transparent",border:"none",color:active===s.id?C.gold:"#28384a",fontSize:9,letterSpacing:"0.22em",textTransform:"uppercase",padding:"5px 6px",cursor:"pointer",textAlign:"right",fontFamily:"Georgia,serif",transition:"color 0.3s",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:8}}>
+              <span>{s.label}</span>
+              <span style={{width:active===s.id?16:5,height:1,background:active===s.id?C.gold:"#28384a",transition:"width 0.3s"}} />
+            </button>
+          ))}
+        </nav>
+      );
+    }
+
+    // ── APP ──────────────────────────────────────────────────────
+    function PhiSite() {
+      return (
+        <div style={{background:`linear-gradient(180deg,${C.bg} 0%,${C.bg2} 50%,${C.bg} 100%)`,color:C.body,minHeight:"100vh",width:"100%",fontFamily:"Georgia,serif",overflow:"hidden auto"}}>
+          <SideNav />
+          <HeroSection />
+          <RatioSection />
+          <TorusSection />
+          <WindingsSection />
+          <AxisSection />
+          <WaveSection />
+          <SoundSection />
+          <CymaticsSection />
+          <HermeticSection />
+          <SchaubergerSection />
+          <BiologySection />
+          <RussellSection />
+          <BlueprintSection />
+          <CloseSection />
+          <footer style={{padding:"60px 20px 40px",textAlign:"center",borderTop:"1px solid rgba(184,134,11,0.1)",color:C.dim,fontSize:10,letterSpacing:"0.3em",textTransform:"uppercase"}}>
+            R. Wierzbicki · 2026 · φ · 3 · 6 · 9
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<PhiSite />);
+  </script>
+</body>
+</html>
