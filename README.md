@@ -257,9 +257,10 @@ All structural components are 3D-printed in PETG from parametrically generated S
 | May 23, 2026 | Bambu Lab A1 Mini operational |
 | May 24, 2026 | Toroidal segment peg/socket alignment validated procedurally |
 | May 24, 2026 | 45° segmented toroid architecture finalized for V1 testing 
-| TBD | Phase 1 electromagnetic characterisation |
+| June 6, 2026 | **Phase 1 attempted — V1 only.** Measured L=0.47 mH, Q~161 @500kHz (dropping to ~14 near SRF), SRF≈1.000 MHz, C_self≈54 pF, DC resistance 2.9Ω, anti-resonance at 12.005 MHz. Wheeler-formula comparison corrected (predicted 0.323 mH; measured is ~45% higher, likely turn-to-turn proximity/mutual coupling not captured by the idealized formula). V2/V3 not yet built — Phase 1's full V1/V2/V3 comparison is not yet possible. |
+| TBD | Phase 1 completion — V2/V3 build and measurement |
 | TBD | Phase 2 field distribution mapping |
-| TBD | Phase 3 scalar component investigation |
+| TBD | Phase 3 Faraday-cage transmission test |
 | TBD | Phase 4 biological response investigation |
 
 ---
