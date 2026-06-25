@@ -10,14 +10,25 @@ This repository documents the design, fabrication, and experimental evaluation o
 
 The platform investigates whether recursively phi-scaled toroidal structures and quasi-periodic winding distributions exhibit measurable differences in electromagnetic field organisation, resonance behaviour, harmonic distribution, and field coherence — compared to conventional toroidal architectures.
 
-The research sits at the intersection of four independent experimental traditions:
+This project extends one specific, narrow, published result: Purnell et al.
+(2018, *Physiological Reports*) reported that a phi-proportioned toroidal
+electromagnetic array shifted human red blood cell morphology toward
+golden-ratio proportions in a small (n=20), single-device, non-replicated
+pilot study. That study used DC excitation through a conductive saline bath
+and had no non-phi control geometry, so it cannot distinguish whether phi
+geometry specifically — versus toroidal topology generally, the DC field, or
+the saline coupling — is the active variable. This platform's three-version
+comparative design (V1/V2/V3) exists to isolate that variable using an AC,
+air-core implementation. See `docs/literature_review.md` for the full
+evidentiary basis and explicit scope limits.
 
-- **Bioelectromagnetics** — the documented effect of pulsed electromagnetic fields on biological oscillatory systems (Lakhovsky, 1925; Tesla, 1898; Valone, 2003)
-- **Cymatics** — the geometric organisation of matter by vibrational frequency (Jenny, 1967–1974)
-- **Scalar wave theory** — the longitudinal electromagnetic component produced by opposing field vectors (Meyl, 2001; Tesla, 1900)
-- **Cellular oscillation theory** — the LC-circuit model of biological cells and resonant entrainment (Lakhovsky, 1925; Fröhlich, 1968)
-
-No claims of overunity performance or violation of established physical law are made. The purpose of this platform is experimental investigation of measurable electromagnetic phenomena produced by phi-harmonic geometry.
+Cymatics (Jenny, 1967–74) motivates the node-frequency predictions tested in
+Phase 2 — this is a citable, real body of acoustic-physics work, not a
+biological claim. No claims of overunity performance, violation of
+established physical law, or therapeutic/disease-treatment efficacy are
+made. The purpose of this platform is experimental investigation of
+measurable electromagnetic phenomena — inductance, Q, resonant frequency,
+field distribution — produced by phi-harmonic geometry.
 
 ---
 
@@ -31,7 +42,7 @@ The platform is designed to investigate the following specific questions:
 
 3. Do three mutually coupled windings in phi-harmonic phase relationships produce emergent field phenomena not predicted by analysis of each winding in isolation?
 
-4. Does the combination of opposing primary and counter windings produce measurable longitudinal field components consistent with scalar wave theory (Meyl, 2001)?
+4. Does the combination of opposing primary and counter windings produce any measurable difference in Faraday-cage transmission compared to a single-winding control? (Framed as an electrical engineering question; see `docs/literature_review.md` §III for why this is not framed in terms of scalar-wave theory.)
 
 5. Are Fibonacci node positions — predicted by the phi-spiral winding geometry — measurably associated with field concentration or standing-wave formation?
 
@@ -41,19 +52,28 @@ The platform is designed to investigate the following specific questions:
 
 ## Theoretical Foundation
 
-### Cellular Oscillation and Electromagnetic Resonance
+### The Motivating Result
 
-Lakhovsky (1925) proposed that every biological cell functions as a microscopic LC oscillating circuit, with the nucleus constituting both inductance and capacitance. Disease, in this model, represents oscillatory disequilibrium — a departure from the cell's natural resonant frequency. Restoration of coherent oscillatory entrainment was hypothesised to restore biological function.
+Purnell et al. (2018, *Physiological Reports*) reported that a
+phi-proportioned toroidal electromagnetic array shifted human red blood
+cell morphology toward golden-ratio proportions in a small (n=20),
+single-device, non-replicated pilot study using DC excitation through a
+saline bath. The study had no non-phi control geometry, so it cannot
+isolate whether phi geometry, toroidal topology generally, the DC field,
+or the saline coupling produced the effect. This platform's V1/V2/V3
+comparative design exists to isolate that variable with an AC, air-core
+implementation. Full evidentiary basis and scope limits: `docs/literature_review.md`.
 
-This hypothesis is consistent with modern bioelectromagnetics research establishing that pulsed electromagnetic fields affect transmembrane potential, ion channel activity, mitochondrial electron transport, and ATP production (Valone, 2003; Polk & Postow, 1986).
+### Faraday-Cage Transmission Test
 
-The Omnivortex platform investigates whether phi-harmonic toroidal geometry constitutes a more coherent entrainment structure than conventional toroidal inductors — specifically whether the golden-angle winding distribution produces field nodes that correspond to natural biological oscillatory frequencies.
-
-### Scalar Wave Components
-
-Meyl (2001) demonstrated experimentally that opposing electromagnetic field vectors — as produced by the primary and counter windings of this platform — cancel the transverse Hertzian component while preserving a longitudinal scalar component. This scalar component exhibited anomalous propagation characteristics including Faraday cage penetration, consistent with Tesla's original observations (Tesla, 1900, 1905).
-
-The three-winding architecture of the V3 platform is therefore investigated both as a conventional toroidal inductor and as a potential scalar wave transducer. Both hypotheses are testable with the planned measurement protocol.
+The V3 winding architecture (opposing primary/counter windings, 120° phase
+offset) will be compared against V1/V2 single-winding controls for any
+measurable difference in transmission through a grounded Faraday enclosure.
+This is framed as an electrical engineering measurement, not as a test of
+scalar-wave theory — see `docs/literature_review.md` §III for why that
+framework is explicitly not part of this project's evidentiary basis. Any
+unexpected result will be investigated via conventional EM coupling
+mechanisms first.
 
 ### Cymatic Field Organisation
 
@@ -161,19 +181,24 @@ Instruments: Gaussmeter, Arduino sweep driver
 - Standing-wave node detection using particle medium
 - Cymatic pattern documentation at each node frequency
 
-### Phase 3 — Scalar Component Investigation
+### Phase 3 — Faraday-Cage Transmission Test
 Instruments: Paired coil sets, oscilloscope, Faraday cage
 
 - Faraday cage transmission test: V1 vs V2 vs V3
 - Phase velocity measurement
-- Replication of Meyl (2001) methodology at phi-harmonic frequencies
+- Any anomalous result investigated via conventional EM coupling mechanisms
+  before any other interpretation
 
 ### Phase 4 — Biological Response Investigation
 
-*Phase 4 investigations will be conducted within applicable regulatory frameworks and will not involve therapeutic claims or human subjects without appropriate oversight.*
+*Phase 4 investigations will be conducted within applicable regulatory
+frameworks (IRB-equivalent oversight required for any biological subject)
+and will not involve therapeutic claims. This phase is a long-horizon,
+not-yet-scoped extension and is not a current commitment.*
 
-- In vitro cellular oscillation measurements pre/post field exposure
-- Plant growth comparative studies (replication of Lakhovsky 1925 methodology)
+- Replication attempt of Purnell (2018) RBC morphology measurement,
+  parametrized across V1/V2/V3 to test whether phi geometry specifically
+  is the active variable
 
 ---
 
